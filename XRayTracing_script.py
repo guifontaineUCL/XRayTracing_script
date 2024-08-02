@@ -29,7 +29,7 @@ inputFile = 'XRayTracing_Input.xlsx' #pathname + '\\' + 'XRayTracing.inp'
 ################### Function definitions ##############################
 #######################################################################
 
-def compute_dose(PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num):
+def compute_dose(PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents):
     """
     Computes the dose at a given point in the product based on X-ray source parameters and product geometry.
 
@@ -88,8 +88,14 @@ def compute_dose(PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_
             
             # compute dose
             distance_density = np.array(distance_density)
+            
+            # compute current coefficient
+            if bool_current_x:
+                curr_weight = currents[l]/np.mean(currents)
+            else:
+                curr_weight = currents[m]/np.mean(currents)
 
-            Dose += D0*math.exp(-mu0*sum(distance_density[q][0]*distance_density[q][1] for q in range(len(distance_density))))/(0.01*r)**2 # [Gy/mAh] 1-D array (dim = kmax) that contains the Y values of the mapping
+            Dose += curr_weight*D0*math.exp(-mu0*sum(distance_density[q][0]*distance_density[q][1] for q in range(len(distance_density))))/(0.01*r)**2 # [Gy/mAh] 1-D array (dim = kmax) that contains the Y values of the mapping
     
     if units_num == 0: Dose *= currentPerCell # [Gy/h]
     elif units_num == 1: Dose *= 0.001*currentPerCell # [kGy/h]
@@ -225,7 +231,13 @@ for exp_num in range(data.shape[0]):
 
         width_scan = float(data.loc[exp_num, "Source X-dimension [cm]"])
 
-        current = float(data.loc[exp_num, "Current [mA]"])
+        bool_current_x = data.loc[exp_num, "Variable Current in Y direction [mA]"] == "/"
+        bool_current_y = data.loc[exp_num, "Variable Current in X direction [mA]"] == "/"
+        if bool_current_x:
+            current_column = data.loc[exp_num, "Variable Current in X direction [mA]"]
+        else:
+            current_column = data.loc[exp_num, "Variable Current in Y direction [mA]"]
+        currents = np.array([float(curr) for curr in current_column.strip('[]').split(',')])
 
         source_xRes,source_yRes = [float(data.loc[exp_num, "Source resolution (X,Y,) [cm²]"].split("(")[1].split(",")[0]),
                                    float(data.loc[exp_num, "Source resolution (X,Y,) [cm²]"].split(",")[1].split(",")[0])]
@@ -378,11 +390,12 @@ for exp_num in range(data.shape[0]):
         nSource_Y_cells = int(length_nom/source_yRes)
         nSource_cells = nSource_X_cells * nSource_Y_cells
 
+        mean_current = np.mean(currents)
         time_travel = 0.01*length_nom/conv_speed # [min] = Time for the pallet to go along the entire source (>< process time!)
-        charge = current*time_travel/60 # [mA h]
+        charge = mean_current*time_travel/60 # [mA h]
         chargePerCell = charge / nSource_cells  # [mA h]
-        currentPerCell = current / nSource_cells  # [mA]
-        ratio_iv = current/conv_speed # [mA min/m]
+        currentPerCell = mean_current / nSource_cells  # [mA]
+        ratio_iv = mean_current/conv_speed # [mA min/m]
         pv = 6*ratio_iv/width_scan # process value [As/m²]
         nPalletPerMin = 100*conv_speed/(central_prod_dim[1] + left_prod_yGap) # [1/min]
         
@@ -460,8 +473,8 @@ for exp_num in range(data.shape[0]):
                         PointInProduct_single = np.array([XYZ_1D[j][0], XYZ_1D[j][1], mapping[k]+Translation[2]])
                         PointInProduct_double = np.array([XYZ_1D[j][0], XYZ_1D[j][1], 2*z_c-mapping[k]-Translation[2]])       
 
-                    Dose_single[k] = compute_dose(PointInProduct_single,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num)
-                    Dose_double[k] = Dose_single[k] + compute_dose(PointInProduct_double,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num)
+                    Dose_single[k] = compute_dose(PointInProduct_single,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents)
+                    Dose_double[k] = Dose_single[k] + compute_dose(PointInProduct_double,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents)
                 # Save the doses
                 Dose_1D_single[j,i] = Dose_single
                 Dose_1D_double[j,i] = Dose_double
@@ -504,18 +517,18 @@ for exp_num in range(data.shape[0]):
             Translation = np.array([x_c, y_c, z_c-central_prod_dim[2]/2])
             PointInProduct_single = XYZ_0D[j]   
             PointInProduct_double = np.array([XYZ_0D[j][0],XYZ_0D[j][1],2*z_c-XYZ_0D[j][2]])
-            Dose_0D_single[j] = compute_dose(PointInProduct_single,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num)
-            Dose_0D_double[j] = Dose_0D_single[j] + compute_dose(PointInProduct_double,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num)
+            Dose_0D_single[j] = compute_dose(PointInProduct_single,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents)
+            Dose_0D_double[j] = Dose_0D_single[j] + compute_dose(PointInProduct_double,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents)
             save_log(f"./Log_files/Exp{exp_num+1}_log_file.txt", f"\n= 0D-Mapping number {j+1} at (X,Y,Z)=({XYZ_0D[j][0]},{XYZ_0D[j][1]},{XYZ_0D[j][2]}) =", False, False)
             save_log(f"./Log_files/Exp{exp_num+1}_log_file.txt", f"\nDose single : {Dose_0D_single[j]} {units} - dose double : {Dose_0D_double[j]} {units}", False, False)
 
         ### Find Dmin, Dmax and DUR for single and double side irradiation in central product
         print("\n== Looking for minimum and maximum doses in product ... ==")
         save_log(f"./Log_files/Exp{exp_num+1}_log_file.txt", f"\n== Dose min, dose max and dur ==", False, False)
-        func = lambda PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num : compute_dose(PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num)
+        func = lambda PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents : compute_dose(PointInProduct,boxes,n_boxes,densities,nSource_X_cells,nSource_Y_cells,source_xRes,source_yRes,width_scan,length_nom,units_num,bool_current_x,bool_current_y,currents)
         
         # Find min and max dose for single and double side irradiation
-        doses_single, doses_double, doses_points = find_min_max_dose(func, central_prod_res, boxes, n_boxes, densities, nSource_X_cells, nSource_Y_cells, source_xRes, source_yRes, width_scan, length_nom, units_num)
+        doses_single, doses_double, doses_points = find_min_max_dose(func, central_prod_res, boxes, n_boxes, densities, nSource_X_cells, nSource_Y_cells, source_xRes, source_yRes, width_scan, length_nom, units_num, bool_current_x, bool_current_y, currents)
 
         # Get indices of min and max doses for single and double side irradiation
         ind_min_single = np.unravel_index(np.argmin(doses_single), doses_single.shape)
@@ -625,6 +638,5 @@ for exp_num in range(data.shape[0]):
         save_log(f"./Log_files/Exp{exp_num+1}_log_file.txt", f"\n== Computation time for experiment ==", False, True)
         save_log(f"./Log_files/Exp{exp_num+1}_log_file.txt", f"\nTotal computation time : {total_time} [s]", False, True)
 
-        break
 
         

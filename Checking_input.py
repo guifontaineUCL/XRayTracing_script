@@ -65,10 +65,51 @@ def is_tuple_of_two_positive_numbers(column):
 if not is_tuple_of_two_positive_numbers(data["Source resolution (X,Y,) [cm²]"]):
     print("Error in 'Source resolution (X,Y,) [cm²]' column data : at least one entry is not a tuple of two positive numbers")   
 
-# Check for source current
-if not check_all_positive(data["Current [mA]"]):
-    print("Error in 'Current [mA]' column data : at least one entry is not positive")   
+# Check for source currents
+def is_list_of_positive_numbers(s, n):
+
+    items = s.split('[')[1].split("]")[0].split(",")
     
+    if len(items) != n:
+        return False
+    
+    for item in items:
+        try:
+            num = float(item) 
+            if num <= 0:  
+                return False
+        except ValueError:
+            return False  
+        
+    return True
+
+def validate_current_columns(data):
+    for _, row in data.iterrows():
+        current_x = row['Variable Current in X direction [mA]']
+        current_y = row['Variable Current in Y direction [mA]']
+        dim_x = float(row['Source X-dimension [cm]'])
+        dim_y = float(row['Source Y-dimension [cm]'])
+        source_res_x = float(row['Source resolution (X,Y,) [cm²]'].split("(")[1].split(",")[0])
+        source_res_y = float(row['Source resolution (X,Y,) [cm²]'].split(",)")[0].split(",")[1])
+        
+        if current_x == "/":
+            n = int(dim_y/source_res_y)
+            if not is_list_of_positive_numbers(current_y,n):
+                return False
+        elif current_y == "/":
+            n = int(dim_x/source_res_x)
+            if not is_list_of_positive_numbers(current_x,n):
+                return False
+        else:
+            return False
+    return True
+            
+
+if is_tuple_of_two_positive_numbers(data["Source resolution (X,Y,) [cm²]"]) and check_all_positive(data["Source X-dimension [cm]"]) \
+    and check_all_positive(data["Source Y-dimension [cm]"]) and not validate_current_columns(data):
+        
+    print("Error in 'Variable Current in X direction [mA]' or 'Variable Current in Y direction [mA]' column data : for each row one of these columns must contain '/' entry and the other must contain a list of positive current values whose length correspond to the source discretization in related variable direction")   
+
 ### Check for conveyor information ###
 
 # Check for conveyor density
