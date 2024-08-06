@@ -1,4 +1,15 @@
-### Python file checking the input .xlsx file ###
+# -*- coding: utf-8 -*-
+"""
+Checking_input.py
+
+Created on Fri Jul 19 
+
+@author: gf
+@author: Guilluame Fontaine
+@script version: 1.0
+
+This file checks whether all data in XRayTracing_input.xlsx is fine or not, outputs error messages in case of wrong input data
+"""
 
 import matplotlib.pyplot as plt
 import numpy as np

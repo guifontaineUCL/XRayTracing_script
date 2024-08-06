@@ -1,4 +1,4 @@
-# XRayTracing Script - README
+# XRayTracing Script - script version 1.0 - README
 
 ---
 

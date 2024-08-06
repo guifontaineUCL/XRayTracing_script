@@ -1,15 +1,23 @@
 # -*- coding: utf-8 -*-
 """
-XRayTracing.py
+XRayTracing_script.py
 
 Created on Fri Jul 19 
 
 @author: gf
 @author: Guilluame Fontaine
+@script version: 1.0
 
-This script computes dose profiles in a product based on XRay source from getDD.py:
-- Parameters are stored in a input file: .xslx
-- ...
+The `XRayTracing_script.py` is a Python script designed to simulate the dose distribution of X-ray radiation on a central product from a radiation source. The simulation considers both source-related parameters (such as energy-angle spectrum and geometry) and system parameters (including geometry and density) for the conveyor, as well as the left, right, and central products, wooden pallets, and mother pallets.
+
+The principal objective of this script is to provide a faster alternative to Monte Carlo simulations, such as those performed by the RayXpert tool, which are often too slow for practical use. This script aims to achieve an optimal balance between speed and accuracy.
+
+The simulation has three primary objectives:
+1. **Compute 1D Dose Mappings:** Calculate and plot dose profiles along the X, Y, and Z directions around specific 1D mapping points.
+2. **Compute 0D Dose Mappings:** Determine the dose at discrete X, Y, Z points (0-D mappings).
+3. **Extract Dose Metrics:** Evaluate the minimum dose, maximum dose, and dose uniformity ratio (DUR) within the central product for both single and double irradiation scenarios.
+
+The script is designed to handle multiple experimental setups, which can be specified in the `XRayTracing_Input.xlsx` file.
 """
 
 import matplotlib.pyplot as plt
