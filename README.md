@@ -71,8 +71,10 @@ The `XRayTracing_Input.xlsx` file is organized into several sections, each conta
 ### Simulation Information
 - **Simulation number:** Unique identifier for each experiment.
 - **Run (V or X):** Indicates whether the simulation should be executed (V) or skipped (X).
+- **Method (RBF, Linear, Angle2Dose):** Method used for simulation (RBF should be the best so far)
 
 ### Source Information
+- **Energy [MeV]:** Source energy for angular-energy spectrum 
 - **Source X-dimension [cm]:** Width of the X-ray source.
 - **Source Y-dimension [cm]:** Length of the X-ray source.
 - **Source resolution (X, Y) [cm²]:** Resolution of the source grid in the X and Y directions.

@@ -1,12 +1,19 @@
 === Experiment 1 ===
 
 == Experiment parameters ==
-Effective time per pass: 1.13 [min]
-Charge per pass: 0.02 [mA.h]
-Machine factor (i/v): 0.39 [mA.min/m]
-Process value (i/v/SW): 0.01 [As/m²]
+Homogeneous Scan mode
+Dur Computation based on 6 vertical line mappings
+Kernel Method : RBF
+Effective time per pass: 1.33 [min]
+Charge per pass: 1.78 [mA.h]
+Machine factor (i/v): 26.67 [mA.min/m]
+Process value (i/v/SW): 0.73 [As/m²]
 Dose units : [Gy/h]
 
 == 1D-mappings ==
 
-= 1D-Mapping number 0 around (X,Y,Z)=(0.0,0.0,30.0) =
+= 1D-Mapping number 0 around (X,Y,Z)=(0.0,0.0,75.0) =
+
+== 0D-mappings ==
+
+== Dose min, dose max and dur ==

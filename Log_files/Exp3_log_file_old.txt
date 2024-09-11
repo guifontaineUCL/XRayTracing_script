@@ -1,0 +1,40 @@
+=== Experiment 3 ===
+
+== Experiment parameters ==
+Homogeneous Scan mode
+Effective time per pass: 1.33 [min]
+Charge per pass: 1.78 [mA.h]
+Machine factor (i/v): 26.67 [mA.min/m]
+Process value (i/v/SW): 0.8 [As/m²]
+Dose units : [Gy/h]
+
+== 1D-mappings ==
+
+= 1D-Mapping number 0 around (X,Y,Z)=(0.0,0.0,75.0) =
+
+== 0D-mappings ==
+
+== Dose min, dose max and dur ==
+
+= Single side irradiation =
+
+Dose min : 2142.0 [Gy/h] at point : [-50.4, 0.0, 121.67]
+Dose max : 100441.33 [Gy/h] at point : [-2.4, -57.0, 28.33]
+DUR : 46.89
+
+= Double side irradiation =
+
+Dose min : 23638.24 [Gy/h] at point : [63.2, 0.0, 75.0]
+Dose max : 106521.49 [Gy/h] at point : [-2.4, -57.0, 28.33]
+DUR : 4.51
+
+== Conclusions about number of laps and throughput ==
+
+Global Number of laps in single side irradiation: 526
+Global Number of laps in double side irradiation: 48
+Throughput [Pallets/year] in single side irradiation: 2105.8789119625617
+Throughput [Pallets/year] in double side irradiation: 23076.923076923074
+
+== Computation time for experiment ==
+
+Total computation time : 497.8 [s]

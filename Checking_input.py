@@ -2,7 +2,7 @@
 """
 Checking_input.py
 
-Created on Fri Jul 19 
+Created on Fri Jul 19 2024
 
 @author: gf
 @author: Guilluame Fontaine
@@ -48,13 +48,31 @@ def check_V_or_X(column):
 
 if not check_V_or_X(data["Run (V or X)"]):
     print("Error in 'Run (V or X)' column data : at least one entry is not a 'V' or 'X'")
-    
-### Check source information ###
 
-# Check X and Y source dimensions
+# Check method
+def check_method(column):
+    return all(x in {'RBF', 'Linear', 'Angle2Dose'} for x in column)
+
+if not check_method(data["Method (RBF, Linear, Angle2Dose)"]):
+    print("Error in 'Method (RBF, Linear, Angle2Dose)' column data : at least one entry is not a 'RBF', 'Linear' or 'Angle2Dose'")
+
+
+### Check source information ###
 def check_all_positive(column):
     return all(x > 0 for x in column)
 
+def check_all_non_negative(column):
+    return all(x >= 0 for x in column)
+
+# Check energy
+Energy_list = [7] # to complete if new energy implemented
+def check_energy(column):
+    return all(float(x) in Energy_list for x in column)
+
+if not check_energy(data["Energy [MeV]"]):
+    print("Error in 'Energy [MeV]' column data : at least one entry is not an energy implemented")
+
+# Check X and Y source dimensions
 if not check_all_positive(data["Source X-dimension [cm]"]):
     print("Error in 'Source X-dimension [cm]' column data : at least one entry is not positive")
     
@@ -76,55 +94,129 @@ def is_tuple_of_two_positive_numbers(column):
 if not is_tuple_of_two_positive_numbers(data["Source resolution (X,Y,) [cm²]"]):
     print("Error in 'Source resolution (X,Y,) [cm²]' column data : at least one entry is not a tuple of two positive numbers")   
 
-# Check for source currents
-def is_list_of_positive_numbers(s, n):
+# Check for source current
+if not check_all_positive(data["Current [mA]"]):
+    print("Error in 'Current [mA]' column data : at least one entry is not positive")   
+    
+# Check for Variable Scan (V or X)
+if not check_V_or_X(data["Variable Scan (V or X)"]):
+    print("Error in 'Variable Scan (V or X)' column data : at least one entry is not 'X' or 'V'")   
 
-    items = s.split('[')[1].split("]")[0].split(",")
-    
-    if len(items) != n:
-        return False
-    
-    for item in items:
+# Check variable scan file name
+import os
+
+def check_file_name(column):
+    for entry in column:
         try:
-            num = float(item) 
-            if num <= 0:  
+            if not os.path.exists(entry.strip()):
                 return False
-        except ValueError:
+        except (TypeError, AttributeError):
             return False  
-        
     return True
 
-def validate_current_columns(data):
-    for _, row in data.iterrows():
-        current_x = row['Variable Current in X direction [mA]']
-        current_y = row['Variable Current in Y direction [mA]']
-        dim_x = float(row['Source X-dimension [cm]'])
-        dim_y = float(row['Source Y-dimension [cm]'])
-        source_res_x = float(row['Source resolution (X,Y,) [cm²]'].split("(")[1].split(",")[0])
-        source_res_y = float(row['Source resolution (X,Y,) [cm²]'].split(",)")[0].split(",")[1])
-        
-        if current_x == "/":
-            n = int(dim_y/source_res_y)
-            if not is_list_of_positive_numbers(current_y,n):
-                return False
-        elif current_y == "/":
-            n = int(dim_x/source_res_x)
-            if not is_list_of_positive_numbers(current_x,n):
-                return False
+if not check_file_name(data["Variable Scan File Path"]):
+    print("Error in 'Variable Scan File Path' column data : at least one entry does not match an existing file path")   
+
+def parse_multiline_array(lines, start_index):
+    array = []
+    i = start_index
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.endswith(']'):
+            array.extend(map(float, line.strip('[]').split()))
+            break
         else:
-            return False
-    return True
-            
+            array.extend(map(float, line.strip('[],').split()))
+        i += 1
+    return array, i + 1
 
-if is_tuple_of_two_positive_numbers(data["Source resolution (X,Y,) [cm²]"]) and check_all_positive(data["Source X-dimension [cm]"]) \
-    and check_all_positive(data["Source Y-dimension [cm]"]) and not validate_current_columns(data):
-        
-    print("Error in 'Variable Current in X direction [mA]' or 'Variable Current in Y direction [mA]' column data : for each row one of these columns must contain '/' entry and the other must contain a list of positive current values whose length correspond to the source discretization in related variable direction")   
+def parse_multiline_positions(lines, start_index):
+    positions = []
+    i = start_index
+    while i < len(lines):
+        line = lines[i].strip()
+        if line.endswith(']]'):
+            positions.append(list(map(float, line.strip('[]').split())))
+            break
+        else:
+            positions.append(list(map(float, line.strip('[],').split())))
+        i += 1
+    return positions, i + 1
+
+def parse_input_file(file_path):
+    alpha = []
+    positions = []
+    lengths = []
+
+    with open(file_path, 'r') as file:
+        lines = file.readlines()
+
+        # Find and parse the alpha values
+        next_index = 0
+        for i, line in enumerate(lines):
+            if line.strip().startswith('Alpha = ['):
+                alpha_line = line.strip().lstrip('Alpha = ')
+                # Check if the array is on a single line
+                if alpha_line.endswith(']'):
+                    alpha.extend(map(float, alpha_line.strip('[]').split()))
+                    next_index = i + 1
+                else:
+                    alpha.extend(map(float, alpha_line.strip('[],').split()))
+                    alpha_additional, next_index = parse_multiline_array(lines, i + 1)
+                    alpha.extend(alpha_additional)
+                break
+
+        # Find and parse the positions
+        for i in range(next_index, len(lines)):
+            if lines[i].strip().startswith('Positions of the sources: ['):
+                positions_line = lines[i].strip().lstrip('Positions of the sources: ')
+                # Check if the array is on a single line
+                if positions_line.endswith(']]'):
+                    positions.append(list(map(float, positions_line.strip('[]').split())))
+                    next_index = i + 1
+                else:
+                    positions.append(list(map(float, positions_line.strip('[],').split())))
+                    positions_additional, next_index = parse_multiline_positions(lines, i + 1)
+                    positions.extend(positions_additional)
+                break
+
+        # Find and parse the lengths
+        for i in range(next_index, len(lines)):
+            if lines[i].strip().startswith('Lengths of the sources: ['):
+                lengths_line = lines[i].strip().lstrip('Lengths of the sources: ')
+                # Check if the array is on a single line
+                if lengths_line.endswith(']'):
+                    lengths.extend(map(float, lengths_line.strip('[]').split()))
+                    next_index = i + 1
+                else:
+                    lengths.extend(map(float, lengths_line.strip('[],').split()))
+                    lengths_additional, next_index = parse_multiline_array(lines, i + 1)
+                    lengths.extend(lengths_additional)
+                break
+
+    return np.array(alpha), np.array(positions), np.array(lengths)
+
+
+if check_file_name(data["Variable Scan File Path"]):
+    for n, row in data.iterrows():
+        path = row["Variable Scan File Path"]
+        alphas, positions, lengths = parse_input_file(path)
+        if abs(sum(alphas*lengths)/sum(lengths)-1) >= 1e-10:
+            print(f"Error in Variable Scan file Path : the corresponding file row {n+1} contains alpha profile not normalized by weighted lengths") 
+            break
+        if positions[0][0] != 0 and row["Variable Scan (V or X)"] == "V" and row["Run (V or X)"] == "V":
+            width = positions[-1][0]+lengths[-1]/2-(positions[0][0]-lengths[0]/2)
+            if width != float(row["Source X-dimension [cm]"]):
+                print(f"Error in column 'Variable Scan File Path' column : file in row {n+1} does not model an appropriate scan width of {float(row['Source X-dimension [cm]'])}cm")
+        elif positions[0][1] != 0 and row["Variable Scan (V or X)"] == "V" and row["Run (V or X)"] == "V":
+            length = positions[-1][1]+lengths[-1]/2-(positions[0][1]-lengths[0]/2)
+            if length != float(row["Source Y-dimension [cm]"]):
+                print(f"Error in column 'Variable Scan File Path' column : at least file in row {n+1} does not model an appropriate scan length of {float(row['Source Y-dimension [cm]'])}cm")
 
 ### Check for conveyor information ###
 
 # Check for conveyor density
-if not check_all_positive(data["Conveyor density [g/cm³]"]):
+if not check_all_non_negative(data["Conveyor density [g/cm³]"]):
     print("Error in 'Conveyor density [g/cm³]' column data : at least one entry is not positive") 
 
 # Check for conveyor positive dimensions
@@ -169,7 +261,7 @@ if not check_all_positive(data["Operation [hours/year]"]):
 ### Check for central product information ###
 
 # Check for central product density
-if not check_all_positive(data["Central product density [g/cm³]"]):
+if not check_all_non_negative(data["Central product density [g/cm³]"]):
     print("Error in 'Central product density [g/cm³]' column data : at least one entry is not positive")
     
 # Check for central product dimensions
@@ -187,7 +279,7 @@ if not is_tuple_of_three_positive_numbers(data["Central product resolution (X,Y,
 ### check for central wooden pallet information ###
 
 # check for central wooden pallet density
-if not check_all_positive(data["Central wooden pallet density [g/cm³]"]):
+if not check_all_non_negative(data["Central wooden pallet density [g/cm³]"]):
     print("Error in 'Central wooden pallet density [g/cm³]' column data : at least one entry is not positive")
 
 # Check for central wooden pallet dimensions
@@ -197,7 +289,7 @@ if not is_tuple_of_three_positive_numbers(data["Central wooden pallet dimensions
 ### Check for left product information ###
 
 # Check for left product density
-if not check_all_positive(data["Left product density [g/cm³]"]):
+if not check_all_non_negative(data["Left product density [g/cm³]"]):
     print("Error in 'Left product density [g/cm³]' column data : at least one entry is not positive")
     
 # Check for left product dimensions
@@ -211,7 +303,7 @@ if not check_all_positive(data["Left product Y-gap [cm]"]):
 ### check for left wooden pallet information ###
 
 # check for central wooden pallet density
-if not check_all_positive(data["Left wooden pallet density [g/cm³]"]):
+if not check_all_non_negative(data["Left wooden pallet density [g/cm³]"]):
     print("Error in 'Left wooden pallet density [g/cm³]' column data : at least one entry is not positive")
 
 # Check for left wooden pallet dimensions
@@ -222,7 +314,7 @@ if not is_tuple_of_three_positive_numbers(data["Left wooden pallet dimensions [c
 ### Check for right product information ###
 
 # Check for right product density
-if not check_all_positive(data["Right product density [g/cm³]"]):
+if not check_all_non_negative(data["Right product density [g/cm³]"]):
     print("Error in 'Right product density [g/cm³]' column data : at least one entry is not positive")
     
 # Check for right product dimensions
@@ -236,7 +328,7 @@ if not check_all_positive(data["Right product Y-gap [cm]"]):
 ### check for right wooden pallet information ###
 
 # check for right wooden pallet density
-if not check_all_positive(data["Right wooden pallet density [g/cm³]"]):
+if not check_all_non_negative(data["Right wooden pallet density [g/cm³]"]):
     print("Error in 'Right wooden pallet density [g/cm³]' column data : at least one entry is not positive")
 
 # Check for right wooden pallet dimensions
@@ -246,7 +338,7 @@ if not is_tuple_of_three_positive_numbers(data["Right wooden pallet dimensions [
 ### Check for mother pallet information ###
 
 # Check for mother pallet density
-if not check_all_positive(data["Mother pallets density [g/cm³]"]):
+if not check_all_non_negative(data["Mother pallets density [g/cm³]"]):
     print("Error in 'Mother pallets density [g/cm³]' column data : at least one entry is not positive")
 
 # Check for mother pallet dimensions
@@ -265,8 +357,8 @@ if not check_integer_between_0_3(data["Units (Gy/h) (kGy/h) (Gy) (kGy)"]):
     print("Error in 'Units (Gy/h) (kGy/h) (Gy) (kGy)' column data : at least one entry is not an integer between 0 and 3")
 
 # check for minimum dose
-if not check_all_positive(data["Minimum dose"]):
-    print("Error in 'Minimum dose' column data : at least one entry is not positive")
+if not check_all_positive(data["Minimum dose [kGy]"]):
+    print("Error in 'Minimum dose [kGy]' column data : at least one entry is not positive")
 
 ### Check for 0-D mapping points ###
 
@@ -314,6 +406,32 @@ if not check_V_or_X(data["Z-mapping (V or X)"]):
 if not is_list_of_triplets(data["List of p 1-D mapping points (X1,Y1,Z1), …, (Xp,Yp,Zp)"]):
     print("Error in 'List of p 1-D mapping points (X1,Y1,Z1), …, (Xp,Yp,Zp)' column data : at least one entry is not a list of triplets")
 
+### Check for Dur search info
+def check_V_X_different(data):
+    for n, row in data.iterrows():
+        entry1 = row.iloc[0]
+        entry2 = row.iloc[1]
+        entry3 = row.iloc[2]
+        entry4 = row.iloc[3]
+        if (entry1 == "X" and entry2 == "X" and entry3 == "X" and entry4 == "X") or (entry1 == "V" and entry2 == "V") or (entry1 == "V" and entry3 == "V") or (entry1 == "V" and entry4 == "V") or (entry2 == "V" and entry3 == "V") or (entry2 == "V" and entry4 == "V") or (entry3 == "V" and entry4 == "V"):
+            return False
+    return True
+        
+if not check_V_or_X(data["3 XY-planes (V or X)"]):
+    print("Error in '3 XY-planes (V or X)' column data : at least one entry is not a 'X' or 'V")
+
+if not check_V_or_X(data["9 vertical 1D lines (V or X)"]):
+    print("Error in '9 vertical 1D lines (V or X)' column data : at least one entry is not a 'X' or 'V")
+
+if not check_V_or_X(data["6 vertical 1D lines (V or X)"]):
+    print("Error in '6 vertical 1D lines (V or X)' column data : at least one entry is not a 'X' or 'V")
+
+if not check_V_or_X(data["No search (V or X)"]):
+    print("Error in 'No search (V or X)' column data : at least one entry is not a 'X' or 'V")
+
+if not check_V_X_different(data.loc[:,["3 XY-planes (V or X)", "9 vertical 1D lines (V or X)", "6 vertical 1D lines (V or X)", "No search (V or X)"]]):
+    print("Error in '3 XY-planes (V or X)' or '9 vertical 1D lines (V or X)' or '6 vertical 1D lines (V or X)' or 'No search (V or X)' column data : There must be only one 'V' entry in each row among all 4 columns")
+    
 ### Check for overlaps
 
 # Check for left and right products source collision

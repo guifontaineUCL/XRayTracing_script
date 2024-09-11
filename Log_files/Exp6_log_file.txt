@@ -1,0 +1,61 @@
+=== Experiment 6 ===
+
+== Experiment parameters ==
+Homogeneous Scan mode
+No Dur Computation
+Effective time per pass: 1.13 [min]
+Charge per pass: 1.51 [mA.h]
+Machine factor (i/v): 26.67 [mA.min/m]
+Process value (i/v/SW): 0.76 [As/m²]
+Dose units : [Gy/h]
+
+== 1D-mappings ==
+
+= 1D-Mapping number 0 around (X,Y,Z)=(0.0,0.0,75.0) =
+
+X direction - single : [42232.48218156 41669.91465795 43049.98757983 44322.19774827
+ 45327.80072621 46013.90344004 46435.12464253 46634.90948531
+ 46634.90948531 46435.12464253 46013.90344004 45327.80072621
+ 44322.19774827 43049.98757983 41669.91465795 42232.48218156] - double : [68087.45777966 65914.36941294 67543.97819745 69473.82490718
+ 71036.12850826 72164.42383772 72888.64470678 73236.30970995
+ 73236.30970995 72888.64470678 72164.42383772 71036.12850826
+ 69473.82490718 67543.97819745 65914.36941294 68087.45777966]
+
+Y direction - single : [57284.50322766 50795.43210717 48170.37542982 47181.82696176
+ 46852.89717839 46852.89717839 47181.82696176 48170.37542982
+ 50795.43210717 57284.50322766] - double : [93661.21269421 81332.91399097 76434.57530933 74291.86301612
+ 73511.69308512 73511.69308512 74291.86301612 76434.57530933
+ 81332.91399097 93661.21269421]
+
+Z direction - single : [104304.84310448  86583.27890314  70703.39839772  57328.6984252
+  46785.61210297  38471.52494355  31897.56978644  26622.10673056
+  22313.36895829  18723.61083615  15762.54114322  13306.20721416] - double : [117611.05031864 102345.82004637  89427.00923388  79642.06738349
+  73407.71883353  70369.09473     70369.09473     73407.71883353
+  79642.06738349  89427.00923388 102345.82004637 117611.05031864]
+
+== 0D-mappings ==
+
+== Dose min, dose max and dur ==
+
+= Single side irradiation =
+
+Dose min : inf [Gy/h] at point : [inf, inf, inf]
+Dose max : inf [Gy/h] at point : [inf, inf, inf]
+DUR : None
+
+= Double side irradiation =
+
+Dose min : inf [Gy/h] at point : [inf, inf, inf]
+Dose max : inf [Gy/h] at point : [inf, inf, inf]
+DUR : None
+
+== Conclusions about number of laps and throughput ==
+
+Global Number of laps in single side irradiation: None
+Global Number of laps in double side irradiation: None
+Throughput [Pallets/year] in single side irradiation: None
+Throughput [Pallets/year] in double side irradiation: None
+
+== Computation time for experiment ==
+
+Total computation time : 19.09 [s]

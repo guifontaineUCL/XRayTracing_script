@@ -155,7 +155,7 @@ def spher2cart(theta,phi,R,option=1):
 #    print('R vs. Check :',R,check)
     return x,y,z 
 
-def angle2dose(theta,phi):
+def angle2dose_7MeV(theta,phi):
     # Temporaire, à améliorer
 #    if phi < 60: D0 = 10000 - phi*10000/60 # [Gy/h * m²/mA]
 #    else : D0 = 0
@@ -180,6 +180,21 @@ def angle2dose(theta,phi):
     D0 = D[i,j] #[Gy/h * m²/mA]
     
     mu0 = 0.031 + 0.005/60*phi # [g/cm²]
+    
+    return D0, mu0
+
+def angle2dose_script4(theta,phi):
+    # Test function
+    # No dependency on theta, only on phi
+    # D0 = a*exp(-b*|phi|)
+    # mu0 = c+d|phi|^e
+    a = 10782.16459957
+    b = 0.043625335
+    c = 0.028479818690
+    d = 3.994827080003034e-16
+    e = 7.22039646730
+    D0 = a*np.exp(-b*abs(phi))
+    mu0 = c+d*abs(phi)**e
     
     return D0, mu0
 
